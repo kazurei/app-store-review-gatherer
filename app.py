@@ -81,10 +81,8 @@
 ####
 ####    st.dataframe(df)
 import streamlit as st
-import pandas as pd
+import pkgutil
 
-from app_store_reviews_reader.app_store_reviews_reader import (
-    AppStoreReviewsReader
-)
+modules = [m.name for m in pkgutil.iter_modules()]
 
-st.title("import成功")
+st.write(modules)
