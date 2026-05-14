@@ -1,3 +1,4 @@
 streamlit
 app_store_scraper 
+app-store-scraper
 pandas
