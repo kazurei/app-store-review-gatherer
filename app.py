@@ -57,26 +57,34 @@
 ##
 ##    except Exception as e:
 ##        st.error(e)
+####import streamlit as st
+####import pandas as pd
+####from app_store_reviews_reader import AppStoreReviewsReader
+####
+####st.title("App Store レビュー取得")
+####
+####app_id = st.text_input(
+####    "App ID",
+####    "1325457827"
+####)
+####
+####if st.button("取得"):
+####
+####    reader = AppStoreReviewsReader()
+####
+####    reviews = reader.reviews(
+####        app_id=app_id,
+####        country="jp"
+####    )
+####
+####    df = pd.DataFrame(reviews)
+####
+####    st.dataframe(df)
 import streamlit as st
 import pandas as pd
-from app_store_reviews_reader import AppStoreReviewsReader
 
-st.title("App Store レビュー取得")
-
-app_id = st.text_input(
-    "App ID",
-    "1325457827"
+from app_store_reviews_reader.app_store_reviews_reader import (
+    AppStoreReviewsReader
 )
 
-if st.button("取得"):
-
-    reader = AppStoreReviewsReader()
-
-    reviews = reader.reviews(
-        app_id=app_id,
-        country="jp"
-    )
-
-    df = pd.DataFrame(reviews)
-
-    st.dataframe(df)
+st.title("import成功")
