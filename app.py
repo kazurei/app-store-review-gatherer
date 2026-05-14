@@ -24,9 +24,9 @@ country = st.selectbox(
 max_reviews = st.number_input(
     "最大取得件数",
     min_value=100,
-    max_value=10000,
-    value=1000,
-    step=100
+    max_value=50000,
+    value=10000,
+    step=200
 )
 
 if st.button("取得開始"):
