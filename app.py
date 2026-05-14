@@ -12,7 +12,7 @@ st.title("App Store 大量レビュー取得")
 
 app_id = st.text_input(
     "App ID",
-    "1606356401"
+    "1160578459"
 )
 
 country = st.selectbox(
