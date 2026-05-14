@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import feedparser
+import requests
 
 st.set_page_config(
     page_title="App Store Review Scraper",
@@ -31,37 +31,50 @@ if st.button("レビュー取得"):
 
     try:
 
-        # Apple RSS Review Feed
+        # Apple RSS JSON
         url = (
             f"https://itunes.apple.com/"
             f"{country}/rss/customerreviews/"
-            f"id={app_id}/sortBy=mostRecent/json"
+            f"id={app_id}/json"
         )
 
-        feed = feedparser.parse(url)
+        response = requests.get(url)
 
-        entries = feed.entries
+        if response.status_code != 200:
+            st.error(
+                f"HTTP Error: {response.status_code}"
+            )
+            st.stop()
+
+        data = response.json()
+
+        entries = data["feed"]["entry"]
 
         reviews = []
 
-        for entry in entries[:review_count]:
+        # 最初の1件はアプリ情報なので除外
+        for entry in entries[1:review_count + 1]:
 
             review = {
-                "author": entry.get("author", ""),
-                "title": entry.get("title", ""),
-                "review": entry.get("summary", ""),
-                "published": entry.get("published", "")
+                "author": entry["author"]["name"]["label"],
+                "title": entry["title"]["label"],
+                "review": entry["content"]["label"],
+                "rating": entry["im:rating"]["label"],
+                "version": entry["im:version"]["label"],
+                "updated": entry["updated"]["label"]
             }
 
             reviews.append(review)
 
         if len(reviews) == 0:
-            st.warning("レビュー取得失敗")
+            st.warning("レビューが取得できませんでした")
             st.stop()
 
         df = pd.DataFrame(reviews)
 
-        st.success(f"{len(df)}件取得")
+        st.success(
+            f"{len(df)}件取得しました"
+        )
 
         st.dataframe(
             df,
