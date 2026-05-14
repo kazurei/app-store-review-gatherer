@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import requests
+import time
 
 st.set_page_config(
-    page_title="App Store Review Scraper",
+    page_title="App Store Large Review Scraper",
     layout="wide"
 )
 
-st.title("App Store レビュー取得")
+st.title("App Store 大量レビュー取得")
 
 app_id = st.text_input(
     "App ID",
@@ -20,78 +21,109 @@ country = st.selectbox(
     index=0
 )
 
-review_count = st.slider(
-    "取得件数",
-    10,
-    500,
-    100
+max_reviews = st.number_input(
+    "最大取得件数",
+    min_value=100,
+    max_value=10000,
+    value=1000,
+    step=100
 )
 
-if st.button("レビュー取得"):
+if st.button("取得開始"):
+
+    all_reviews = []
+
+    progress = st.progress(0)
 
     try:
 
-        # Apple RSS JSON
-        url = (
-            f"https://itunes.apple.com/"
-            f"{country}/rss/customerreviews/"
-            f"id={app_id}/json"
-        )
+        page = 1
 
-        response = requests.get(url)
+        while len(all_reviews) < max_reviews:
 
-        if response.status_code != 200:
-            st.error(
-                f"HTTP Error: {response.status_code}"
+            url = (
+                f"https://itunes.apple.com/"
+                f"{country}/rss/customerreviews/"
+                f"page={page}/id={app_id}/sortby=mostrecent/json"
             )
-            st.stop()
 
-        data = response.json()
+            response = requests.get(url)
 
-        entries = data["feed"]["entry"]
+            if response.status_code != 200:
+                break
 
-        reviews = []
+            data = response.json()
 
-        # 最初の1件はアプリ情報なので除外
-        for entry in entries[1:review_count + 1]:
+            if "feed" not in data:
+                break
 
-            review = {
-                "author": entry["author"]["name"]["label"],
-                "title": entry["title"]["label"],
-                "review": entry["content"]["label"],
-                "rating": entry["im:rating"]["label"],
-                "version": entry["im:version"]["label"],
-                "updated": entry["updated"]["label"]
-            }
+            if "entry" not in data["feed"]:
+                break
 
-            reviews.append(review)
+            entries = data["feed"]["entry"]
 
-        if len(reviews) == 0:
-            st.warning("レビューが取得できませんでした")
-            st.stop()
+            if len(entries) <= 1:
+                break
 
-        df = pd.DataFrame(reviews)
+            # 最初はアプリ情報
+            for entry in entries[1:]:
 
-        st.success(
-            f"{len(df)}件取得しました"
-        )
+                try:
 
-        st.dataframe(
-            df,
-            use_container_width=True
-        )
+                    review = {
+                        "author": entry["author"]["name"]["label"],
+                        "title": entry["title"]["label"],
+                        "review": entry["content"]["label"],
+                        "rating": entry["im:rating"]["label"],
+                        "version": entry["im:version"]["label"],
+                        "updated": entry["updated"]["label"]
+                    }
 
-        csv = df.to_csv(
-            index=False,
-            encoding="utf-8-sig"
-        ).encode("utf-8-sig")
+                    all_reviews.append(review)
 
-        st.download_button(
-            "CSVダウンロード",
-            data=csv,
-            file_name="appstore_reviews.csv",
-            mime="text/csv"
-        )
+                    if len(all_reviews) >= max_reviews:
+                        break
+
+                except:
+                    continue
+
+            page += 1
+
+            progress.progress(
+                min(len(all_reviews) / max_reviews, 1.0)
+            )
+
+            time.sleep(0.5)
+
+        if len(all_reviews) == 0:
+
+            st.warning("レビュー取得失敗")
+
+        else:
+
+            df = pd.DataFrame(all_reviews)
+
+            st.success(
+                f"{len(df)}件取得しました"
+            )
+
+            st.dataframe(
+                df,
+                use_container_width=True
+            )
+
+            csv = df.to_csv(
+                index=False,
+                encoding="utf-8-sig"
+            ).encode("utf-8-sig")
+
+            st.download_button(
+                "CSVダウンロード",
+                data=csv,
+                file_name="appstore_reviews.csv",
+                mime="text/csv"
+            )
 
     except Exception as e:
+
         st.error(e)

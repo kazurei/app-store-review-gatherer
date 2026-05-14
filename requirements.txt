@@ -1,3 +1,4 @@
 streamlit
 pandas
 app_store_reviews_reader
+requests
